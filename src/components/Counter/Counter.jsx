@@ -1,63 +1,82 @@
-import {useState, memo, useCallback, useMemo} from 'react';
+import {memo, useCallback, useEffect, useMemo, useState} from 'react';
 
 import IconButton from '../UI/IconButton.jsx';
 import MinusIcon from '../UI/Icons/MinusIcon.jsx';
 import PlusIcon from '../UI/Icons/PlusIcon.jsx';
 import CounterOutput from './CounterOutput.jsx';
-import { log } from '../../log.js';
+import {log} from '../../log.js';
+import CounterHistory from "./CounterHistory.jsx";
 
 function isPrime(number) {
-  log(
-    'Calculating if is prime number',
-    2,
-    'other'
-  );
-  if (number <= 1) {
-    return false;
-  }
+	log('Calculating if is prime number', 2, 'other');
 
-  const limit = Math.sqrt(number);
+	if (number <= 1) {
+		return false;
+	}
 
-  for (let i = 2; i <= limit; i++) {
-    if (number % i === 0) {
-      return false;
-    }
-  }
+	const limit = Math.sqrt(number);
 
-  return true;
+	for (let i = 2; i <= limit; i++) {
+		if (number % i === 0) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
-const Counter = memo(function Counter({ initialCount }) {
-  log('<Counter /> rendered', 1);
-  const initialCountIsPrime = useMemo(() => isPrime(initialCount), [initialCount]);
+const Counter = memo(function Counter({initialCount}) {
+	log('<Counter /> rendered', 1);
 
-  const [counter, setCounter] = useState(initialCount);
+	const initialCountIsPrime = useMemo(
+		() => isPrime(initialCount),
+		[initialCount]
+	);
 
-  const handleDecrement = useCallback(function handleDecrement() {
-    setCounter((prevCounter) => prevCounter - 1);
-  }, []);
+	// const [counter, setCounter] = useState(initialCount);
+	const [counterChanges, setCounterChanges] = useState([{value: initialCount, id: Math.random() * 1000}]);
 
-  const handleIncrement = useCallback(function handleIncrement() {
-    setCounter((prevCounter) => prevCounter + 1);
-  }, []);
+	const currentCounter = counterChanges.reduce(
+		(prevCounter, counterChange) => prevCounter + counterChange.value,
+		0
+	);
 
-  return (
-    <section className="counter">
-      <p className="counter-info">
-        The initial counter value was <strong>{initialCount}</strong>. It{' '}
-        <strong>is {initialCountIsPrime ? 'a' : 'not a'}</strong> prime number.
-      </p>
-      <p>
-        <IconButton icon={MinusIcon} onClick={handleDecrement}>
-          Decrement
-        </IconButton>
-        <CounterOutput value={counter} />
-        <IconButton icon={PlusIcon} onClick={handleIncrement}>
-          Increment
-        </IconButton>
-      </p>
-    </section>
-  );
+	useEffect(() => {
+		setCounterChanges([{value: 0, id: Math.random() * 1000}]);
+	}, [initialCount]);
+
+	const handleDecrement = useCallback(function handleDecrement() {
+		// setCounter((prevCounter) => prevCounter - 1);
+		setCounterChanges((prevCounterChanges) => [{value: -1, id: Math.random() * 1000},
+			...prevCounterChanges]);
+	}, []);
+
+	const handleIncrement = useCallback(function handleIncrement() {
+		// setCounter((prevCounter) => prevCounter + 1);
+		setCounterChanges((prevCounterChanges) => [{value: 1, id: Math.random() * 1000},
+			...prevCounterChanges]);
+	}, []);
+
+	console.log(currentCounter);
+
+	return (
+		<section className="counter">
+			<p className="counter-info">
+				The initial counter value was <strong>{initialCount}</strong>. It{' '}
+				<strong>is {initialCountIsPrime ? 'a' : 'not a'}</strong> prime number.
+			</p>
+			<p>
+				<IconButton icon={MinusIcon} onClick={handleDecrement}>
+					Decrement
+				</IconButton>
+				<CounterOutput value={currentCounter}/>
+				<IconButton icon={PlusIcon} onClick={handleIncrement}>
+					Increment
+				</IconButton>
+			</p>
+			<CounterHistory history={counterChanges}/>
+		</section>
+	);
 });
 
 export default Counter;
